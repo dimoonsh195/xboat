@@ -404,6 +404,13 @@ function grad(o,c1,c2,r)
     g.Rotation = r or 90
 end
 
+-- ФУНКЦИЯ ДЛЯ ИКОНОК (ФИКС ЗАГРУЗКИ)
+local function getIcon(id)
+    local num = tostring(id):match("%d+")
+    if not num then return "" end
+    return "rbxthumb://type=Asset&id=" .. num .. "&w=150&h=150"
+end
+
 if CoreGui:FindFirstChild("XboatGui") then CoreGui.XboatGui:Destroy() end
 if CoreGui:FindFirstChild("XboatLoading") then CoreGui.XboatLoading:Destroy() end
 if CoreGui:FindFirstChild("XboatNotify") then CoreGui.XboatNotify:Destroy() end
@@ -493,6 +500,15 @@ searchBox = Instance.new("TextBox"); searchBox.Size = UDim2.new(1,-8,1,0); searc
 sBarF = Instance.new("Frame"); sBarF.Size = UDim2.new(0,128,0,540); sBarF.Position = UDim2.new(0,0,0,38); sBarF.BackgroundTransparency = 1; sBarF.Parent = MF
 
 tKeys = {"main","player","visuals","build","babft","binds","settings"}
+tabIcons = {
+    main = "81381827579989",
+    player = "16149111790",
+    visuals = "135898005858456",
+    build = "129677215762700",
+    babft = "129504364047784",
+    binds = "105162630228121",
+    settings = "9405931596",
+}
 tEmoji = {}
 tBtns, tFrames = {}, {}
 curTab = "main"
@@ -512,15 +528,16 @@ for i, k in ipairs(tKeys) do
     end
     Instance.new("UICorner",bg).CornerRadius = UDim.new(0,4)
     
-    local icon = Instance.new("TextLabel"); icon.Name = "ICON"; icon.Size = UDim2.new(0,20,0,20); icon.Position = UDim2.new(0,6,0.5,-10); icon.BackgroundTransparency = 1; icon.Text = tEmoji[k] or "•"; icon.Font = FH; icon.TextSize = 16; icon.ZIndex = 2; icon.Parent = b
+    -- ИЗМЕНЕНО: Используем getIcon для прогрузки
+    local icon = Instance.new("ImageLabel"); icon.Name = "ICON"; icon.Size = UDim2.new(0,20,0,20); icon.Position = UDim2.new(0,6,0.5,-10); icon.BackgroundTransparency = 1; icon.Image = getIcon(tabIcons[k] or "0"); icon.ScaleType = Enum.ScaleType.Fit; icon.ZIndex = 2; icon.Parent = b
     
     local l = Instance.new("TextLabel"); l.Name = "LBL"; l.Size = UDim2.new(1,-30,1,0); l.Position = UDim2.new(0,30,0,0); l.BackgroundTransparency = 1; l.Text = T(k); l.Font = FH; l.TextSize = 14; l.TextXAlignment = Enum.TextXAlignment.Left; l.ZIndex = 2; l.Parent = b
     
     if isLocked then
-        icon.TextColor3 = Color3.fromRGB(100, 100, 110)
+        icon.ImageColor3 = Color3.fromRGB(100, 100, 110)
         l.TextColor3 = Color3.fromRGB(100, 100, 110)
     else
-        icon.TextColor3 = Color3.new(1,1,1)
+        icon.ImageColor3 = accO -- Привязка к цвету обводки
         l.TextColor3 = txtBg()
         b.MouseEnter:Connect(function() if curTab ~= k then TweenService:Create(bg, TweenInfo.new(0.15), {BackgroundColor3=br(tabOffC(),0.06)}):Play() end end)
         b.MouseLeave:Connect(function() if curTab ~= k then TweenService:Create(bg, TweenInfo.new(0.15), {BackgroundColor3=tabOffC()}):Play() end end)
@@ -1006,13 +1023,20 @@ function applyAccent()
     if lBg then lBg.BackgroundColor3 = accB; lStr.Color = accO; lT.TextColor3 = accF; lS.TextColor3 = accO; lP.TextColor3 = accO end
     for k, b in pairs(tBtns) do
         local bg, l = b:FindFirstChild("BG"), b:FindFirstChild("LBL")
+        local icon = b:FindFirstChild("ICON")
         if bg and l then
             if k == "build" then
                 bg.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
                 l.TextColor3 = Color3.fromRGB(100, 100, 110)
+                if icon then icon.ImageColor3 = Color3.fromRGB(100, 100, 110) end
             else
-                if curTab == k then bg.BackgroundColor3 = accF; grad(bg, br(accF,0.15), accF, 90); l.TextColor3 = txtC(accF)
-                else bg.BackgroundColor3 = tabOffC(); grad(bg, br(tabOffC(),0.03), tabOffC(), 90); l.TextColor3 = txtBg() end
+                if curTab == k then 
+                    bg.BackgroundColor3 = accF; grad(bg, br(accF,0.15), accF, 90); l.TextColor3 = txtC(accF)
+                    if icon then icon.ImageColor3 = accO end
+                else 
+                    bg.BackgroundColor3 = tabOffC(); grad(bg, br(tabOffC(),0.03), tabOffC(), 90); l.TextColor3 = txtBg() 
+                    if icon then icon.ImageColor3 = accO end
+                end
             end
         end
     end
@@ -1107,12 +1131,19 @@ function setTab(k)
     curTab = k
     for kk, b in pairs(tBtns) do
         local bg, l = b:FindFirstChild("BG"), b:FindFirstChild("LBL")
+        local icon = b:FindFirstChild("ICON")
         if bg then
             if kk == "build" then
                 bg.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
                 if l then l.TextColor3 = Color3.fromRGB(100, 100, 110) end
-            elseif kk == k then TweenService:Create(bg, TweenInfo.new(0.15), {BackgroundColor3=accF}):Play(); grad(bg, br(accF,0.15), accF, 90); if l then l.TextColor3 = txtC(accF) end
-            else local tOff = tabOffC(); TweenService:Create(bg, TweenInfo.new(0.15), {BackgroundColor3=tOff}):Play(); grad(bg, br(tOff,0.03), tOff, 90); if l then l.TextColor3 = txtBg() end end
+                if icon then icon.ImageColor3 = Color3.fromRGB(100, 100, 110) end
+            elseif kk == k then 
+                TweenService:Create(bg, TweenInfo.new(0.15), {BackgroundColor3=accF}):Play(); grad(bg, br(accF,0.15), accF, 90); if l then l.TextColor3 = txtC(accF) end
+                if icon then TweenService:Create(icon, TweenInfo.new(0.15), {ImageColor3=accO}):Play() end
+            else 
+                local tOff = tabOffC(); TweenService:Create(bg, TweenInfo.new(0.15), {BackgroundColor3=tOff}):Play(); grad(bg, br(tOff,0.03), tOff, 90); if l then l.TextColor3 = txtBg() end 
+                if icon then TweenService:Create(icon, TweenInfo.new(0.15), {ImageColor3=accO}):Play() end
+            end
         end
     end
 end
@@ -1794,12 +1825,19 @@ upFS((flySpeed-MIN_FS)/(MAX_FS-MIN_FS)); upWS((wsVal-MIN_WS)/(MAX_WS-MIN_WS)); u
 tFrames["main"].Visible = true
 for k, b in pairs(tBtns) do
     local bg, l = b:FindFirstChild("BG"), b:FindFirstChild("LBL")
+    local icon = b:FindFirstChild("ICON")
     if bg then
         if k == "build" then
             bg.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
             if l then l.TextColor3 = Color3.fromRGB(100, 100, 110) end
-        elseif k == "main" then bg.BackgroundColor3 = accF; grad(bg, br(accF,0.15), accF, 90); if l then l.TextColor3 = txtC(accF) end
-        else bg.BackgroundColor3 = tabOffC(); grad(bg, br(tabOffC(),0.03), tabOffC(), 90); if l then l.TextColor3 = txtBg() end end
+            if icon then icon.ImageColor3 = Color3.fromRGB(100, 100, 110) end
+        elseif k == "main" then 
+            bg.BackgroundColor3 = accF; grad(bg, br(accF,0.15), accF, 90); if l then l.TextColor3 = txtC(accF) end
+            if icon then icon.ImageColor3 = accO end
+        else 
+            bg.BackgroundColor3 = tabOffC(); grad(bg, br(tabOffC(),0.03), tabOffC(), 90); if l then l.TextColor3 = txtBg() end 
+            if icon then icon.ImageColor3 = accO end
+        end
     end
 end
 
